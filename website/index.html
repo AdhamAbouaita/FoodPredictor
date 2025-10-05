@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Food Predictor – Download</title>
+    <meta name="description" content="Download the Food Predictor desktop app (macOS DMG)." />
+    <style>
+      *,*::before,*::after{box-sizing:border-box}
+      :root{--bg:#0b1220;--panel:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--primary:#60a5fa;--accent:#8b5cf6;--border:rgba(148,163,184,.2)}
+      html,body{height:100%}
+      body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,sans-serif;background:linear-gradient(135deg,#0b1220 0%,#0f172a 100%);color:var(--text);display:grid;grid-template-rows:auto 1fr}
+      header,main,footer{width:min(960px,100%);margin:0 auto;padding:clamp(12px,2.5vw,24px)}
+      h1{margin:0 0 8px 0;font-size:clamp(22px,3vw,32px)}
+      .panel{background:rgba(17,24,39,.7);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:clamp(12px,2.5vw,18px)}
+      .grid{display:grid;gap:clamp(12px,2vw,16px);grid-template-columns:1fr}
+      .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--accent));color:white;text-decoration:none;border:none;font-weight:600}
+      .muted{color:var(--muted)}
+      code{background:#111827;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+      .note{font-size:14px;margin-top:8px}
+      .file-meta{margin-top:8px;font-size:14px;color:var(--muted)}
+      footer{font-size:13px;color:var(--muted)}
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Food Predictor – Download</h1>
+      <div class="muted">Predict tomorrow’s dinner rating using EMA + Prophet.</div>
+    </header>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <h2>macOS Download</h2>
+          <p class="muted">This build is for Apple macOS only. Windows and Linux are not provided here.</p>
+          <p>
+            <a class="btn" href="./Food-Predictor-latest.dmg" download>
+              <span>Download DMG</span>
+            </a>
+          </p>
+          <div class="file-meta" id="fileMeta">Preparing file info…</div>
+          <p class="note">If macOS warns that the app is from an unidentified developer, right‑click the app and choose <em>Open</em> to launch it, or use a signed/notarized build.</p>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <div>© <span id="year"></span> Food Predictor</div>
+    </footer>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      // Try to fetch HEAD to show size if hosted statically
+      fetch('./Food-Predictor-latest.dmg', { method: 'HEAD' })
+        .then(r => {
+          const size = r.headers.get('content-length');
+          const mb = size ? (Number(size) / (1024*1024)).toFixed(1) + ' MB' : 'unknown size';
+          document.getElementById('fileMeta').textContent = 'File: Food-Predictor-latest.dmg (' + mb + ')';
+        })
+        .catch(() => { document.getElementById('fileMeta').textContent = 'File: Food-Predictor-latest.dmg'; });
+    </script>
+  </body>
+  </html>
+
+
