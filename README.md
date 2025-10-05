@@ -8,7 +8,7 @@ A cross‑platform Electron desktop app that lets you log how much you liked din
 - Forecasting strategy:
   - < 30 data points: EMA only
   - 30–60 data points: 70% EMA + 30% Prophet
-  - > 60 data points: Prophet only
+  - \> 60 data points: Prophet only
 - Prophet runs locally in an isolated Python virtual environment created on first use
 
 
