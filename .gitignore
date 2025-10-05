@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+out/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+
+# Electron-builder temp
+build/icons.iconset/
+
+# Python caches
+__pycache__/
+*.pyc

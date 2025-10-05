@@ -1,0 +1,55 @@
+{
+  "name": "food-predictor",
+  "version": "1.0.0",
+  "description": "An Electron application for food prediction",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:clean": "rm -rf dist && electron-builder"
+  },
+  "keywords": [
+    "electron",
+    "food",
+    "predictor"
+  ],
+  "author": "Adham",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.adham.foodpredictor",
+    "productName": "Food Predictor",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "package.json",
+      "python/**/*"
+    ],
+    "extraResources": [
+      { "from": "python", "to": "python" }
+    ],
+    "asarUnpack": [
+      "python/**"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": "dmg",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
+    }
+  }
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Predictor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+            --bg1: #0b1220;
+            --bg2: #0f172a;
+            --panel: rgba(17, 24, 39, 0.7);
+            --border: rgba(148, 163, 184, 0.18);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --primary: #60a5fa;
+            --accent: #8b5cf6;
+            --warn: #f59e0b;
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            color: var(--text);
+            background: radial-gradient(1200px 600px at 10% 10%, #102a43 0%, transparent 60%),
+                        radial-gradient(1200px 600px at 90% 0%, #1e293b 0%, transparent 60%),
+                        linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+        header {
+            width: min(1100px, 100%);
+            margin: 0 auto; padding: 16px clamp(12px, 3vw, 24px);
+        }
+        main {
+            width: min(1100px, 100%);
+            margin: 0 auto; padding: 0 clamp(12px, 3vw, 24px) clamp(16px, 3vh, 32px) clamp(12px, 3vw, 24px);
+        }
+        h1 { font-size: clamp(20px, 2.2vw, 28px); margin: 0; }
+        .muted { color: var(--muted); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(10px, 2vw, 16px); }
+        .panel {
+            background: var(--panel);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.30);
+            padding: clamp(12px, 2.5vw, 18px);
+        }
+        .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(8px, 1.5vw, 12px); }
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field label { color: var(--muted); font-size: 12px; }
+        .field input { width: 100%; }
+        .field.date { grid-column: span 6; }
+        .field.rating { grid-column: span 4; }
+        .actions { grid-column: span 2; display: flex; align-items: end; }
+        @media (max-width: 680px) {
+          .field.date, .field.rating, .actions { grid-column: span 12; }
+          .actions { align-items: stretch; }
+        }
+        input, button {
+            background: rgba(2,6,23, 0.5);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: clamp(8px, 1.8vw, 10px) clamp(10px, 2.2vw, 12px);
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(96,165,250,0.2); }
+        button { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; cursor: pointer; }
+        button:disabled { opacity: .6; cursor: not-allowed; }
+        .forecast { display: flex; gap: 14px; align-items: baseline; }
+        .forecast-value { font-size: clamp(28px, 6vw, 48px); font-weight: 800; }
+        .source { font-size: 12px; color: var(--muted); }
+        .chart-panel { height: clamp(200px, 34vh, 380px); display: grid; }
+        @media (max-height: 720px) { .chart-panel { height: clamp(180px, 32vh, 320px); } }
+        .chart-panel canvas { background: rgba(2,6,23,0.25); border-radius: 12px; width: 100% !important; height: 100% !important; }
+        .toast { position: fixed; right: 20px; bottom: 20px; background: #0ea5e9; color: white; padding: 10px 14px; border-radius: 10px; display: none; }
+        .error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Food Predictor</h1>
+        <div class="muted">Log your daily food rating and see tomorrow’s prediction.</div>
+    </header>
+    <main>
+        <div class="grid">
+            <section class="panel">
+                <div class="form-grid">
+                    <div class="field date">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" />
+                    </div>
+                    <div class="field rating">
+                        <label for="rating">Rating (1–10)</label>
+                        <input type="number" id="rating" min="1" max="10" step="1" />
+                    </div>
+                    <div class="actions">
+                        <button id="save">Save</button>
+                    </div>
+                </div>
+                <div class="muted" id="env-status" style="margin-top:8px"></div>
+            </section>
+            <section class="panel">
+                <div class="forecast">
+                    <div class="forecast-value" id="predicted">—</div>
+                    <div class="source" id="source">source: —</div>
+                </div>
+            </section>
+        </div>
+        <section class="panel chart-panel" style="margin-top:16px">
+            <canvas id="chart"></canvas>
+        </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+      const { ipcRenderer } = require('electron');
+      const dateEl = document.getElementById('date');
+      const ratingEl = document.getElementById('rating');
+      const saveBtn = document.getElementById('save');
+      const envStatusEl = document.getElementById('env-status');
+      const predictedEl = document.getElementById('predicted');
+      const sourceEl = document.getElementById('source');
+      const toastEl = document.getElementById('toast');
+
+      function showToast(message, isError=false) {
+        toastEl.textContent = message;
+        toastEl.classList.toggle('error', isError);
+        toastEl.style.display = 'block';
+        setTimeout(() => { toastEl.style.display = 'none'; }, 2500);
+      }
+
+      function todayStr() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth()+1).padStart(2,'0');
+        const d = String(now.getDate()).padStart(2,'0');
+        return `${y}-${m}-${d}`;
+      }
+
+      async function refreshEnvStatus() {
+        try {
+          const res = await ipcRenderer.invoke('env:status');
+          envStatusEl.textContent = res.ready ? 'Prophet ready' : 'Prophet not ready';
+        } catch (e) {
+          envStatusEl.textContent = 'Env check failed';
+        }
+      }
+
+      async function setupEnv() {
+        // Automatically trigger background setup; just reflect status
+        try { await ipcRenderer.invoke('env:setup'); } catch (_) {}
+      }
+
+      function toDate(d) { return new Date(d + 'T00:00:00'); }
+
+      let chart;
+      function renderChart(rows, predicted) {
+        const ctx = document.getElementById('chart').getContext('2d');
+        const labels = rows.map(r => r.date);
+        const data = rows.map(r => r.rating);
+        const nextDate = rows.length ? new Date(toDate(rows[rows.length-1].date).getTime() + 86400000) : new Date();
+        const nextStr = nextDate.toISOString().slice(0,10);
+        const labelsWithPred = [...labels, nextStr];
+        const dataWithPred = [...data, predicted ?? null];
+
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labelsWithPred,
+            datasets: [
+              { label: 'Rating', data, borderColor: '#60a5fa', tension: 0.25, pointRadius: 2 },
+              { label: 'Prediction', data: dataWithPred, borderColor: '#f59e0b', borderDash: [6,4], pointRadius: 3 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            resizeDelay: 0,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { labels: { color: '#cbd5e1' } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+              y: { min: 1, max: 10, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } }
+            }
+          }
+        });
+      }
+
+      async function refreshAll() {
+        const rows = await ipcRenderer.invoke('data:list');
+        const forecast = await ipcRenderer.invoke('forecast:next');
+        predictedEl.textContent = forecast && typeof forecast.predicted === 'number' ? forecast.predicted.toFixed(2) : '—';
+        sourceEl.textContent = 'source: ' + (forecast && forecast.source ? forecast.source : '—');
+        renderChart(rows, forecast && forecast.predicted);
+      }
+
+      async function onSave() {
+        try {
+          const date = dateEl.value;
+          const rating = Number(ratingEl.value);
+          if (!date || !(rating >= 1 && rating <= 10)) {
+            showToast('Enter valid date and rating (1–10)', true);
+            return;
+          }
+          await ipcRenderer.invoke('data:save', { date, rating });
+          showToast('Saved');
+          await refreshAll();
+        } catch (e) {
+          showToast('Save failed', true);
+        }
+      }
+
+      // Init
+      dateEl.value = todayStr();
+      refreshEnvStatus();
+      setupEnv();
+      refreshAll();
+      window.addEventListener('resize', () => { if (chart) chart.resize(); });
+      saveBtn.addEventListener('click', onSave);
+    </script>
+</body>
+</html>
